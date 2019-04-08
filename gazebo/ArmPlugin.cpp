@@ -33,7 +33,7 @@
 #define INPUT_HEIGHT   64
 #define INPUT_CHANNELS 3
 
-#define NUM_ACTIONS (ArmPlugin::DOF*2)
+#define NUM_ACTIONS ((ArmPlugin::DOF)*2)
 
 #define OPTIMIZER "Adam"
 #define LEARNING_RATE 0.1f
@@ -54,21 +54,21 @@
 /*
 / TODO - Define Reward Parameters
 */
-#define REWARD_WIN                     +100.0f
-#define REWARD_LOSS                    -100.0f
-#define REWARD_APPROACHING             +20.0f
+#define REWARD_WIN                     +10.0f
+#define REWARD_LOSS                    -10.0f
+#define REWARD_APPROACHING             +2.0f
+
+#define MIN_APPROACHING_VELOCITY       +0.025f
 
 #define FACTOR_TOUCH_BY_GRIPPER_BASE   +1.0f
-#define FACTOR_TOUCH_BY_GRIPPER_MIDDLE +4.0f
 #define FACTOR_TIMEOUT                 +1.0f
-#define FACTOR_TOUCH_GROUND            +2.0f
+#define FACTOR_TOUCH_GROUND            +1.0f
 
 #define ALPHA  0.4f
 
 // Define Object Names
 #define WORLD_NAME "arm_world"
 #define PROP_NAME  "tube"
-#define LINK_NAME  "link2"
 #define GRIP_NAME  "gripper_middle"
 
 // Define Collision Parameters
@@ -283,11 +283,6 @@ void ArmPlugin::onCollisionMsg(ConstContactsPtr &contacts)
 			) {
 				// case 1 -- touch by arm:
 				rewardHistory *= FACTOR_TOUCH_BY_GRIPPER_BASE;
-			} else if (
-				strcmp(contacts->contact(i).collision2().c_str(), COLLISION_GRIPPER_MIDDLE) == 0
-			) {
-				// case 2 -- touch by gripper center:
-				rewardHistory *= FACTOR_TOUCH_BY_GRIPPER_MIDDLE;
 			} else {
 				// case others -- unwanted touch:
 				rewardHistory = REWARD_LOSS;
@@ -584,16 +579,6 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 		}
 		const math::Box& propBBox = prop->model->GetBoundingBox();
 		
-		// get the bounding box for the link:
-		physics::LinkPtr link = model->GetLink(LINK_NAME);
-		if( !link )
-		{
-			printf("ArmPlugin - failed to find Link '%s'\n", LINK_NAME);
-			return;
-		}
-		const math::Box& linkBBox = link->GetBoundingBox();
-		
-
 		// get the bounding box for the gripper	
 		physics::LinkPtr gripper  = model->GetLink(GRIP_NAME);
 		if( !gripper )
@@ -607,12 +592,14 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 		const float groundContactThreshold = 0.05f;		
 		bool isGroundContact = (gripBBox.min.z <= groundContactThreshold);
 
+		// compute the reward from the gripper to the prop object
+		const float goalDistance = BoxDistance(gripBBox, propBBox); 
+
 		/*
 		/ TODO - set appropriate Reward for robot hitting the ground.
 		*/
 		if(isGroundContact)
 		{
-						
 			printf("[EOE]: GROUND CONTACT\n");
 
 			rewardHistory = FACTOR_TOUCH_GROUND * REWARD_LOSS;
@@ -626,9 +613,6 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 		*/ 
 		if(!isGroundContact)
 		{
-			// compute the reward from the gripper to the prop object
-			const float goalDistance = BoxDistance(gripBBox, propBBox); 
-
 			if(false){
 				printf(
 					"[OnUpdate]: distance('%s', '%s') = %f\n",
@@ -645,6 +629,7 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 			} else {
 				// keep init distance:
 				initGoalDistance = goalDistance;
+
 				if(false) {
 					printf(
 						"[OnUpdate]: initial distance ('%s', '%s') = %f\n", 
@@ -657,13 +642,13 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 			/*
 			/ Interrim Rewards:
 			*/
-			// velocity towards object:
-			float rewardGripperGoalDelta = REWARD_APPROACHING * (avgGoalDelta);
+			// a. velocity towards object:
+			float rewardGripperGoalDelta = REWARD_APPROACHING * (avgGoalDelta - MIN_APPROACHING_VELOCITY);
 
 			if(false) {
 				printf(
-					"[OnUpdate]: (%s') = (%f))\n", 
-					"Reward GripperGoalDelta", 
+					"[OnUpdate]: (%s') = (%f)\n", 
+					"Reward GripperGoalDelta",
 					rewardGripperGoalDelta
 				);
 			}
