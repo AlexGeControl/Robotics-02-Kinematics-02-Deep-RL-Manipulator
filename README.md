@@ -1,121 +1,212 @@
 
-# Deep RL Arm Manipulation
+# Deep Reinforcement Learning Arm Manipulation
 
-This project is based on the Nvidia open source project "jetson-reinforcement" developed by [Dustin Franklin](https://github.com/dusty-nv). The goal of the project is to create a DQN agent and define reward functions to teach a robotic arm to carry out two primary objectives:
+[![Udacity - Robotics NanoDegree Program](https://s3-us-west-1.amazonaws.com/udacity-robotics/Extra+Images/RoboND_flag.png)](https://www.udacity.com/robotics)
+
+[//]: # (Written by Ge Yao, 6th, April, 2019)
+
+This project aims to create a DQN agent and define reward functions to teach a robotic arm to carry out two primary objectives:
 
 1. Have any part of the robot arm touch the object of interest, with at least a 90% accuracy.
 2. Have only the gripper base of the robot arm touch the object, with at least a 80% accuracy.
 
-## Building from Source (Nvidia Jetson TX2)
+---
 
-Run the following commands from terminal to build the project from source:
+## Solution
 
-``` bash
-$ sudo apt-get install cmake
-$ git clone http://github.com/udacity/RoboND-DeepRL-Project
-$ cd RoboND-DeepRL-Project
-$ git submodule update --init
-$ mkdir build
-$ cd build
-$ cmake ../
-$ make
-```
-
-During the `cmake` step, Torch will be installed so it can take awhile. It will download packages and ask you for your `sudo` password during the install.
-
-## Testing the API
-
-To make sure that the reinforcement learners are still functioning properly from C++, a simple example of using the API called [`catch`](samples/catch/catch.cpp) is provided.  Similar in concept to pong, a ball drops from the top of the screen which the agent must catch before the ball reaches the bottom of the screen, by moving it's paddle left or right.
-
-To test the textual [`catch`](samples/catch/catch.cpp) sample, run the following executable from the terminal.  After around 100 episodes or so, the agent should start winning the episodes nearly 100% of the time:  
+To get started with the project, run the following:
 
 ``` bash
-$ cd RoboND-DeepRL-Project/build/aarch64/bin
-$ ./catch 
-[deepRL]  input_width:    64
-[deepRL]  input_height:   64
-[deepRL]  input_channels: 1
-[deepRL]  num_actions:    3
-[deepRL]  optimizer:      RMSprop
-[deepRL]  learning rate:  0.01
-[deepRL]  replay_memory:  10000
-[deepRL]  batch_size:     32
-[deepRL]  gamma:          0.9
-[deepRL]  epsilon_start:  0.9
-[deepRL]  epsilon_end:    0.05
-[deepRL]  epsilon_decay:  200.0
-[deepRL]  allow_random:   1
-[deepRL]  debug_mode:     0
-[deepRL]  creating DQN model instance
-[deepRL]  DQN model instance created
-[deepRL]  DQN script done init
-[cuda]  cudaAllocMapped 16384 bytes, CPU 0x1020a800000 GPU 0x1020a800000
-[deepRL]  pyTorch THCState  0x0318D490
-[deepRL]  nn.Conv2d() output size = 800
-WON! episode 1
-001 for 001  (1.0000)  
-WON! episode 5
-004 for 005  (0.8000)  
-WON! episode 10
-007 for 010  (0.7000)  
-WON! episode 15
-010 for 015  (0.6667)  
-WON! episode 20
-013 for 020  (0.6500)  13 of last 20  (0.65)  (max=0.65)
-WON! episode 25
-015 for 025  (0.6000)  11 of last 20  (0.55)  (max=0.65)
-LOST episode 30
-018 for 030  (0.6000)  11 of last 20  (0.55)  (max=0.65)
-LOST episode 35
-019 for 035  (0.5429)  09 of last 20  (0.45)  (max=0.65)
-WON! episode 40
-022 for 040  (0.5500)  09 of last 20  (0.45)  (max=0.65)
-LOST episode 45
-024 for 045  (0.5333)  09 of last 20  (0.45)  (max=0.65)
-WON! episode 50
-027 for 050  (0.5400)  09 of last 20  (0.45)  (max=0.65)
-WON! episode 55
-031 for 055  (0.5636)  12 of last 20  (0.60)  (max=0.65)
-LOST episode 60
-034 for 060  (0.5667)  12 of last 20  (0.60)  (max=0.65)
-WON! episode 65
-038 for 065  (0.5846)  14 of last 20  (0.70)  (max=0.70)
-WON! episode 70
-042 for 070  (0.6000)  15 of last 20  (0.75)  (max=0.75)
-LOST episode 75
-045 for 075  (0.6000)  14 of last 20  (0.70)  (max=0.75)
-WON! episode 80
-050 for 080  (0.6250)  16 of last 20  (0.80)  (max=0.80)
-WON! episode 85
-055 for 085  (0.6471)  17 of last 20  (0.85)  (max=0.85)
-WON! episode 90
-059 for 090  (0.6556)  17 of last 20  (0.85)  (max=0.85)
-WON! episode 95
-063 for 095  (0.6632)  18 of last 20  (0.90)  (max=0.90)
-WON! episode 100
-068 for 100  (0.6800)  18 of last 20  (0.90)  (max=0.90)
-WON! episode 105
-073 for 105  (0.6952)  18 of last 20  (0.90)  (max=0.90)
-WON! episode 110
-078 for 110  (0.7091)  19 of last 20  (0.95)  (max=0.95)
-WON! episode 111
-079 for 111  (0.7117)  19 of last 20  (0.95)  (max=0.95)
-WON! episode 112
-080 for 112  (0.7143)  20 of last 20  (1.00)  (max=1.00)
+cd RoboND-DeepRL-Project/build
+make
+cd x86_64/bin
+./gazebo-arm.sh
 ```
 
-Internally, [`catch`](samples/catch/catch.cpp) is using the [`dqnAgent`](c/dqnAgent.h) API from our C++ library to implement the learning.
+The RL agent and the reward functions are defined inside [`ArmPlugin.cpp`](gazebo/ArmPlugin.cpp).
 
+### RL Agent:
 
-## Project Environment
+The code segment for RL agent definition is as follows:
 
-To get started with the project environment, run the following:
+```c++
+/*
+/ Hyperparameters for DQN agent
+/ Raw Input Params:
+/   W-H-C: 64-64-3
+/ DOF:
+/   3
+*/
+#define INPUT_WIDTH    64
+#define INPUT_HEIGHT   64
+#define INPUT_CHANNELS 3
 
-``` bash
-$ cd RoboND-DeepRL-Project/build/aarch64/bin
-$ ./gazebo-arm.sh
+#define NUM_ACTIONS ((ArmPlugin::DOF)*2)
+
+#define OPTIMIZER "Adam"
+#define LEARNING_RATE 0.1f
+#define REPLAY_MEMORY 10000
+#define BATCH_SIZE 256
+
+#define GAMMA 0.9f
+
+#define EPS_START 0.7f
+#define EPS_END 0.02f
+#define EPS_DECAY 200
+
+#define USE_LSTM true
+#define LSTM_SIZE 256
+#define ALLOW_RANDOM true
+#define DEBUG_DQN false
+
+// CreateAgent
+bool ArmPlugin::createAgent()
+{
+	// Create DQN Agent:
+	agent = dqnAgent::Create(
+		INPUT_WIDTH, INPUT_HEIGHT, INPUT_CHANNELS, 
+		NUM_ACTIONS, 
+		OPTIMIZER, LEARNING_RATE, 
+		REPLAY_MEMORY, BATCH_SIZE, 
+		GAMMA, 
+		EPS_START, EPS_END, EPS_DECAY, 
+		USE_LSTM, LSTM_SIZE, 
+		ALLOW_RANDOM, DEBUG_DQN
+	);
+}
+```
+The hyperparameters of the agent are determined as follows:
+
+1. The **input dimensions** are determined from **camera message medadata**. 
+2. The **output dimensions**, *NUM_ACTIONS* are set as the dimension of control. Since in this project only planar motion planning is used, hence the *LOCKBASE* is set to true and agent DOF is set as 2. So the dimension of output is set as 2*DOF which is **4**.
+3. The **optimizer** is selected as **Adam** with learning rate **0.1** for LSTM out of Andrew Ng's best practice suggestion.
+
+### Reward Function Design
+
+After trials & errors, the final reward function is designed as follows:
+
+```c++
+/*
+/ Parameters for Reward Function
+*/
+#define REWARD_WIN                     +10.0f
+#define REWARD_LOSS                    -10.0f
+#define REWARD_APPROACHING             +2.0f
+
+#define MIN_APPROACHING_VELOCITY       +0.025f
+
+#define FACTOR_TOUCH_BY_GRIPPER_BASE   +1.0f
+#define FACTOR_TIMEOUT                 +1.0f
+#define FACTOR_TOUCH_GROUND            +1.0f
+
+#define ALPHA  0.4f
 ```
 
-<img src="https://github.com/dusty-nv/jetson-reinforcement/raw/master/docs/images/gazebo_arm.jpg">
+#### Rewards
 
-The plugins which hook the learning into the simulation are located in the `gazebo/` directory of the repo. The RL agent and the reward functions are to be defined in [`ArmPlugin.cpp`](gazebo/ArmPlugin.cpp).
+The agent can get reward from the following two actions: **Touching object with gripper base** and **Approaching object at speed above a threshold**.
+
+```c++
+    // Reward Term 1: touching object with gripper base
+    if (
+        strcmp(contacts->contact(i).collision1().c_str(), COLLISION_ITEM) == 0
+    ) {
+        rewardHistory = REWARD_WIN;
+
+        if (
+            strcmp(contacts->contact(i).collision2().c_str(), COLLISION_GRIPPER_BASE) == 0
+        ) {
+            // case 1 -- touch by gripper:
+            rewardHistory *= FACTOR_TOUCH_BY_GRIPPER_BASE;
+        } else {
+            // case others -- unwanted touch:
+            rewardHistory = REWARD_LOSS;
+        }
+
+        newReward  = true;
+        endEpisode = true;
+    }	
+```
+
+```c++
+   // moving average of approaching speed:
+   avgGoalDelta  = (avgGoalDelta * ALPHA) + (distDelta * (1.0 - ALPHA));
+   
+   // Reward Term 2: approaching object at speed above a threshold
+   float rewardGripperGoalDelta = REWARD_APPROACHING * (avgGoalDelta - MIN_APPROACHING_VELOCITY);
+```
+
+The key is the design of second part, approaching object at speed above a threshold.
+
+#### Penalties
+
+The agent will get penalty from the following three actions: **Touching object with parts other than gripper base**, **Time out** and **Touching the ground with gripper**.
+
+```c++
+    // Penalty Term 1: touching object with parts other than gripper base
+    if (
+        strcmp(contacts->contact(i).collision1().c_str(), COLLISION_ITEM) == 0
+    ) {
+        rewardHistory = REWARD_WIN;
+
+        if (
+            strcmp(contacts->contact(i).collision2().c_str(), COLLISION_GRIPPER_BASE) == 0
+        ) {
+            // case 1 -- touch by arm:
+            rewardHistory *= FACTOR_TOUCH_BY_GRIPPER_BASE;
+        } else {
+            // case others -- unwanted touch:
+            rewardHistory = REWARD_LOSS;
+        }
+
+        newReward  = true;
+        endEpisode = true;
+    }		
+```
+
+```c++
+    // Penalty Term 2: time out
+	if( maxEpisodeLength > 0 && episodeFrames > maxEpisodeLength )
+	{
+		printf("[EOE]: episode has exceeded %i frames\n", maxEpisodeLength);
+
+		rewardHistory = FACTOR_TIMEOUT * REWARD_LOSS;
+
+		newReward     = true;
+		endEpisode    = true;
+	}
+```
+
+```c++
+    // Penalty Term 3: touching the ground with gripper
+    const float goalDistance = BoxDistance(gripBBox, propBBox); 
+
+    /*
+    / TODO - set appropriate Reward for robot hitting the ground.
+    */
+    if(isGroundContact)
+    {
+        printf("[EOE]: GROUND CONTACT\n");
+
+        rewardHistory = FACTOR_TOUCH_GROUND * REWARD_LOSS;
+
+        newReward     = true;
+        endEpisode    = true;
+    }
+```
+
+---
+
+## Results
+
+### Approaching with Arm
+
+Using the whole arm, the robot arm can touch the object with at larger than 90% accuracy. The full video record can be found [here](docs/videos/01-arm-touching.mp4)
+
+<img src="docs/images/01-arm-touching.png" alt="Whole Arm Performance">
+
+### Approaching with Gripper Only.
+
+Using only the gripper base, the robot arm can touch the object with at larger than 80% accuracy. The full video record can be found [here](docs/videos/02-gripper-grasping.mp4)
+
+<img src="docs/images/02-gripper-grasping.png" alt="Gripper Only Performance">

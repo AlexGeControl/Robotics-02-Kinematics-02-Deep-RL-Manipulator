@@ -42,7 +42,7 @@
 
 #define GAMMA 0.9f
 
-#define EPS_START 0.7f
+#define EPS_START 0.2f
 #define EPS_END 0.02f
 #define EPS_DECAY 200
 
@@ -60,7 +60,9 @@
 
 #define MIN_APPROACHING_VELOCITY       +0.025f
 
-#define FACTOR_TOUCH_BY_GRIPPER_BASE   +1.0f
+#define FACTOR_PROXIMITY               +2.0f
+#define FACTOR_TOUCH_BY_ARM            +1.0f
+#define FACTOR_TOUCH_BY_GRIPPER_BASE   +2.0f
 #define FACTOR_TIMEOUT                 +1.0f
 #define FACTOR_TOUCH_GROUND            +1.0f
 
@@ -281,8 +283,13 @@ void ArmPlugin::onCollisionMsg(ConstContactsPtr &contacts)
 			if (
 				strcmp(contacts->contact(i).collision2().c_str(), COLLISION_GRIPPER_BASE) == 0
 			) {
-				// case 1 -- touch by arm:
+				// case 1 -- touch by gripper base:
 				rewardHistory *= FACTOR_TOUCH_BY_GRIPPER_BASE;
+			} else if (
+				strcmp(contacts->contact(i).collision2().c_str(), COLLISION_ARM) == 0
+			) {
+				// case 2 -- touch by gripper base:
+				rewardHistory *= FACTOR_TOUCH_BY_ARM;				
 			} else {
 				// case others -- unwanted touch:
 				rewardHistory = REWARD_LOSS;
