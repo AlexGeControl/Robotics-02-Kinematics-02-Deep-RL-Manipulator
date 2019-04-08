@@ -357,6 +357,7 @@ bool ArmPlugin::updateAgent()
 
 	vel[jointIndex] = velocity;
 	
+	// actuation:
 	for( uint32_t n=0; n < DOF; n++ )
 	{
 		ref[n] += vel[n];
@@ -388,6 +389,7 @@ bool ArmPlugin::updateAgent()
 	if( joint > JOINT_MAX )
 		joint = JOINT_MAX;
 
+	// actuation:
 	ref[jointIndex] = joint;
 #endif
 

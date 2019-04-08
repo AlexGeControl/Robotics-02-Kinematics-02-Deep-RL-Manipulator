@@ -81,6 +81,79 @@ The hyperparameters of the agent are determined as follows:
 2. The **output dimensions**, *NUM_ACTIONS* are set as the dimension of control. Since in this project only planar motion planning is used, hence the *LOCKBASE* is set to true and agent DOF is set as 2. So the dimension of output is set as 2*DOF which is **4**.
 3. The **optimizer** is selected as **Adam** with learning rate **0.1** for LSTM out of Andrew Ng's best practice suggestion.
 
+### Control Strategy
+
+The control strategy for the system is as follows. The agent generate the categorical output, one integer between[0, 2 DoF), as control command. It will be mapped to increase and decrease of one control variable by delta for even and odd output respectively. Two type of realizations, namely velocity control and position control, are implemented. **Position control is used for later experiment**.
+
+#### Velocity Control
+
+The implementation of velocity control is shown as follows.
+
+```c++
+	// parse joint index:
+	int jointIndex = action / 2;
+		
+	/*
+	/ Velocity Control - Increase or decrease the joint velocity based on whether the action is even or odd
+	/  If the action is even, increase the joint velocity by the delta parameter
+	/  If the action is odd,  decrease the joint velocity by the delta parameter
+	*/
+	float direction = (0 == action % 2 ? +1.0 : -1.0);
+	float velocity = vel[jointIndex] + direction * actionVelDelta; 
+
+	if( velocity < VELOCITY_MIN )
+		velocity = VELOCITY_MIN;
+
+	if( velocity > VELOCITY_MAX )
+		velocity = VELOCITY_MAX;
+
+	vel[jointIndex] = velocity;
+    
+	// actuation:
+	for( uint32_t n=0; n < DOF; n++ )
+	{
+		ref[n] += vel[n];
+
+		if( ref[n] < JOINT_MIN )
+		{
+			ref[n] = JOINT_MIN;
+			vel[n] = 0.0f;
+		}
+		else if( ref[n] > JOINT_MAX )
+		{
+			ref[n] = JOINT_MAX;
+			vel[n] = 0.0f;
+		}
+	}
+```
+
+#### Position Control
+
+The implementation of position control is shown as follows.
+
+```c++
+	// parse joint index:
+	int jointIndex = action / 2;
+		
+	/*
+	/ Position Control - Increase or decrease the joint position based on whether the action is even or odd
+	/ if the action is even, increase the joint position by the delta parameter
+	/ if the action is odd,  decrease the joint position by the delta parameter
+	*/
+	float direction = (0 == action % 2 ? +1.0 : -1.0);
+	float joint = ref[jointIndex] + direction * actionJointDelta;
+
+	// limit the joint to the specified range
+	if( joint < JOINT_MIN )
+		joint = JOINT_MIN;
+	
+	if( joint > JOINT_MAX )
+		joint = JOINT_MAX;
+
+	// actuation:
+	ref[jointIndex] = joint;
+```
+
 ### Reward Function Design
 
 After trials & errors, the final reward function is designed as follows:
