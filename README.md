@@ -283,3 +283,9 @@ Using the whole arm, the robot arm can touch the object with at larger than 90% 
 Using only the gripper base, the robot arm can touch the object with at larger than 80% accuracy. The full video record can be found [here](docs/videos/02-gripper-grasping.mp4)
 
 <img src="docs/images/02-gripper-grasping.jpg" alt="Gripper Only Performance">
+
+### Utilities
+
+* [Online LaTex Editor](https://www.overleaf.com)
+* [Online Watermarker](https://www.watermarquee.com/watermark)
+* [Screen Recorders](https://itsfoss.com/best-linux-screen-recorders/) 
