@@ -203,10 +203,10 @@ The agent will get penalty from the following three actions: **Touching object w
 
 Using the whole arm, the robot arm can touch the object with at larger than 90% accuracy. The full video record can be found [here](docs/videos/01-arm-approaching.mp4)
 
-<img src="docs/images/01-arm-approaching.png" alt="Whole Arm Performance">
+<img src="docs/images/01-arm-approaching.jpg" alt="Whole Arm Performance">
 
 ### Approaching with Gripper Only.
 
 Using only the gripper base, the robot arm can touch the object with at larger than 80% accuracy. The full video record can be found [here](docs/videos/02-gripper-grasping.mp4)
 
-<img src="docs/images/02-gripper-grasping.png" alt="Gripper Only Performance">
+<img src="docs/images/02-gripper-grasping.jpg" alt="Gripper Only Performance">
