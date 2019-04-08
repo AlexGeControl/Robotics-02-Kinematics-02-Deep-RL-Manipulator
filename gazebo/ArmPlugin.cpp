@@ -24,9 +24,13 @@
 
 /*
 / TODO - Tune the following hyperparameters
+/ Raw Input Params:
+/   W-H-C: 64-64-3
+/ DOF:
+/   3
 */
-#define INPUT_WIDTH   128
-#define INPUT_HEIGHT  128
+#define INPUT_WIDTH   64
+#define INPUT_HEIGHT  64
 #define INPUT_CHANNELS 3
 
 #define NUM_ACTIONS (ArmPlugin::DOF*2)
@@ -69,7 +73,7 @@
 #define ANIMATION_STEPS 1000
 
 // Set Debug Mode
-#define DEBUG false
+#define DEBUG true
 
 // Lock base rotation DOF (Add dof in header file if off)
 #define LOCKBASE true
@@ -137,21 +141,13 @@ void ArmPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr /*_sdf*/)
 	cameraNode->Init();
 	
 	// Subscribe to camera topic:
-	cameraSub = cameraNode->Subscribe(
-		"/gazebo/arm_world/camera/link/camera/image", 
-		onCameraMsg, 
-		this
-	);
+	cameraSub = cameraNode->Subscribe("/gazebo/arm_world/camera/link/camera/image", &ArmPlugin::onCameraMsg, this);
 
 	// Create our node for collision detection
 	collisionNode->Init();
 		
 	// Subscribe to prop collision topic
-	collisionSub = collisionNode->Subscribe(
-		"/gazebo/arm_world/tube/tube_link/my_contact", 
-		onCollisionMsg, 
-		this
-	);
+	collisionSub = collisionNode->Subscribe("/gazebo/arm_world/tube/tube_link/my_contact", &ArmPlugin::onCollisionMsg, this);
 
 	// Listen to the update event. This event is broadcast every simulation iteration.
 	this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ArmPlugin::OnUpdate, this, _1));
@@ -164,7 +160,6 @@ bool ArmPlugin::createAgent()
 	if( agent != NULL )
 		return true;
 
-			
 	// Create DQN Agent:
 	agent = dqnAgent::Create(
 		INPUT_WIDTH, INPUT_HEIGHT, INPUT_CHANNELS, 
