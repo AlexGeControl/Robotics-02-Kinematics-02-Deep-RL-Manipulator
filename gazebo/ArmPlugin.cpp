@@ -133,19 +133,23 @@ void ArmPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr /*_sdf*/)
 {
 	printf("ArmPlugin::Load('%s')\n", _parent->GetName().c_str());
 
+	/*
+	/ Load model & controller:
+	*/
 	// Store the pointer to the model
 	this->model = _parent;
 	this->j2_controller = new physics::JointController(model);
 
+	/*
+	/ Wire up messages:
+	*/
 	// Create our node for camera communication
 	cameraNode->Init();
-	
 	// Subscribe to camera topic:
 	cameraSub = cameraNode->Subscribe("/gazebo/arm_world/camera/link/camera/image", &ArmPlugin::onCameraMsg, this);
 
 	// Create our node for collision detection
 	collisionNode->Init();
-		
 	// Subscribe to prop collision topic
 	collisionSub = collisionNode->Subscribe("/gazebo/arm_world/tube/tube_link/my_contact", &ArmPlugin::onCollisionMsg, this);
 
@@ -548,28 +552,26 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 	// if an EOE reward hasn't already been issued, compute an intermediary reward
 	if( hadNewState && !newReward )
 	{
+		// get the bounding box for the prop object
 		PropPlugin* prop = GetPropByName(PROP_NAME);
-
 		if( !prop )
 		{
 			printf("ArmPlugin - failed to find Prop '%s'\n", PROP_NAME);
 			return;
 		}
-
-		// get the bounding box for the prop object
 		const math::Box& propBBox = prop->model->GetBoundingBox();
+		
+		// get the bounding box for the gripper	
 		physics::LinkPtr gripper  = model->GetLink(GRIP_NAME);
-
 		if( !gripper )
 		{
 			printf("ArmPlugin - failed to find Gripper '%s'\n", GRIP_NAME);
 			return;
 		}
-
-		// get the bounding box for the gripper		
 		const math::Box& gripBBox = gripper->GetBoundingBox();
-		const float groundContactThreshold = 0.05f;
-		
+
+		// ground collision detection:
+		const float groundContactThreshold = 0.05f;		
 		bool isGroundContact = (gripBBox.min.z <= groundContactThreshold);
 
 		/*
@@ -592,22 +594,53 @@ void ArmPlugin::OnUpdate(const common::UpdateInfo& updateInfo)
 		if(!isGroundContact)
 		{
 			// compute the reward from the gripper to the prop object
-			const float distGoal = BoxDistance(gripBBox, propBBox); 
-
-			if(DEBUG){printf("distance('%s', '%s') = %f\n", gripper->GetName().c_str(), prop->model->GetName().c_str(), distGoal);}
+			const float goalDistance = BoxDistance(gripBBox, propBBox); 
+			if(DEBUG){
+				printf(
+					"[OnUpdate]: distance('%s', '%s') = %f\n",
+					gripper->GetName().c_str(), prop->model->GetName().c_str(), 
+					goalDistance
+				);
+			}
 			
 			if( episodeFrames > 1 )
 			{
-				const float distDelta  = lastGoalDistance - distGoal;
+				const float distDelta  = lastGoalDistance - goalDistance;
 
 				// compute the smoothed moving average of the delta of the distance to the goal
 				avgGoalDelta  = (avgGoalDelta * ALPHA) + (distDelta * (1.0 - ALPHA));
-
-				rewardHistory = avgGoalDelta;
-				newReward     = true;	
+			} else {
+				// keep init distance:
+				initGoalDistance = goalDistance;
+				if(DEBUG) {
+					printf(
+						"[OnUpdate]: initial distance ('%s', '%s') = %f\n", 
+						gripper->GetName().c_str(), prop->model->GetName().c_str(), 
+						initGoalDistance
+					)
+				}
 			}
 
-			lastGoalDistance = distGoal;
+			/*
+			/ Interrim Rewards:
+			*/
+			// a. absolute distance from object:
+			const float rewardDistGoal = REWARD_WIN * (1.0 - goalDistance/initGoalDistance);
+			// b. velocity towards object:
+			const float rewardDistGoalDelta = REWARD_WIN * (avgGoalDelta/initGoalDistance);
+			if(DEBUG) {
+				printf(
+					"[OnUpdate]: ('%s', '%s') = (%f, %f)\n", 
+					"Reward DistGoal", "Reward DistGoalDelta", 
+					rewardDistGoal, rewardDistGoalDelta
+				)
+			}
+			
+			// c. linear combination between absolute distance and approaching speed:
+			rewardHistory = rewardDistGoal + rewardDistGoalDelta;
+			newReward     = true;	
+
+			lastGoalDistance = goalDistance;
 		}
 	}
 
